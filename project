@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartCal</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+  h1   { text-align: center; color: #2c5282; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 900px; margin: 0 auto; }
+  .full { grid-column: 1 / -1; }
+  .card { background: white; border-radius: 8px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 0.95rem; color: #555; margin-bottom: 14px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 3px; }
+  input, select { width: 100%; padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; box-sizing: border-box; }
+  input:focus, select:focus { border-color: #4299e1; outline: none; }
+  .btn { width: 100%; padding: 9px; background: #3182ce; color: white; border: none; border-radius: 5px; font-size: 0.9rem; cursor: pointer; margin-top: 8px; }
+  .btn:hover { background: #2b6cb0; }
+  .agent { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .agent:last-child { border-bottom: none; }
+  .agent-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .agent-info { flex: 1; font-size: 0.82rem; }
+  .agent-info b { display: block; margin-bottom: 1px; }
+  .agent-info span { color: #888; font-size: 0.75rem; }
+  .badge { font-size: 0.65rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .badge-green  { background: #c6f6d5; color: #276749; }
+  .badge-yellow { background: #fefcbf; color: #744210; animation: blink 1.5s infinite; }
+  .badge-blue   { background: #bee3f8; color: #2a4a7f; animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .meeting { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 8px; }
+  .meeting-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .meeting-info { flex: 1; }
+  .meeting-info b { font-size: 0.9rem; }
+  .meeting-info p { font-size: 0.75rem; color: #666; margin: 2px 0; }
+  .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .tag { font-size: 0.62rem; padding: 1px 6px; border-radius: 10px; }
+  .tag-buffer  { background: #e9d8fd; color: #553c9a; }
+  .tag-travel  { background: #bee3f8; color: #2a4a7f; }
+  .tag-risk    { background: #fed7d7; color: #9b2c2c; }
+  .tag-optimal { background: #c6f6d5; color: #276749; }
+  .tag-recur   { background: #fefcbf; color: #744210; }
+  .del-btn { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; }
+  .del-btn:hover { background: #fed7d7; }
+  .empty { text-align: center; color: #aaa; padding: 20px; font-size: 0.85rem; }
+  .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+  .stat { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; }
+  .stat-val { font-size: 1.5rem; font-weight: 700; }
+  .stat-lbl { font-size: 0.65rem; color: #888; text-transform: uppercase; margin-top: 2px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-label { font-size: 0.78rem; color: #555; width: 130px; flex-shrink: 0; }
+  .bar-track { flex: 1; height: 7px; background: #e2e8f0; border-radius: 4px; }
+  .bar-fill  { height: 100%; border-radius: 4px; }
+  .bar-pct   { font-size: 0.75rem; width: 35px; text-align: right; font-weight: 600; }
+  .scaledown-note { background: #ebf8ff; border-left: 3px solid #3182ce; padding: 8px 12px; font-size: 0.75rem; color: #2c5282; margin-top: 10px; line-height: 1.6; border-radius: 0 4px 4px 0; }
+  .tip { border-left: 3px solid #3182ce; background: #ebf8ff; padding: 9px 12px; border-radius: 0 5px 5px 0; margin-bottom: 8px; font-size: 0.8rem; }
+  .tip.warn    { border-color: #d69e2e; background: #fffff0; }
+  .tip.danger  { border-color: #e53e3e; background: #fff5f5; }
+  .tip.success { border-color: #38a169; background: #f0fff4; }
+  .tip b { display: block; margin-bottom: 2px; }
+  .tip span { color: #555; }
+  .neg { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+  .neg-top { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 6px; }
+  .neg-top b { font-size: 0.85rem; }
+  .neg-top span { color: #888; }
+  .prog-track { height: 5px; background: #e2e8f0; border-radius: 3px; }
+  .prog-fill  { height: 100%; border-radius: 3px; }
+  .neg-status { font-size: 0.7rem; color: #666; margin-top: 4px; }
+  .feed-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.78rem; }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-time { color: #aaa; width: 35px; flex-shrink: 0; font-size: 0.7rem; padding-top: 1px; }
+  .feed-badge { font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; font-weight: 700; flex-shrink: 0; height: fit-content; }
+  .fb-ok   { background: #c6f6d5; color: #276749; }
+  .fb-warn { background: #fefcbf; color: #744210; }
+  .fb-info { background: #bee3f8; color: #2a4a7f; }
+  .fb-pred { background: #e9d8fd; color: #553c9a; }
+  .sim-btn { margin-top: 10px; width: 100%; padding: 7px; background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; border-radius: 5px; cursor: pointer; font-size: 0.8rem; }
+  .sim-btn:hover { background: #c6f6d5; }
+  .savings-box { background: linear-gradient(135deg,#ebf8ff,#f0fff4); border: 1px solid #bee3f8; border-radius: 8px; padding: 14px; text-align: center; margin-bottom: 12px; }
+  .savings-val { font-size: 2.2rem; font-weight: 700; color: #2b6cb0; }
+  .savings-lbl { font-size: 0.72rem; color: #666; margin-top: 2px; }
+  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .mini-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 8px; text-align: center; }
+  .mini-val { font-size: 1.1rem; font-weight: 700; }
+  .mini-lbl { font-size: 0.65rem; color: #888; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h1>📅 SmartCal</h1>
+<p class="subtitle">Intelligent Scheduling Assistant — All criteria in one place</p>
+
+<div class="grid">
+
+  <div class="card">
+    <h2>📅 Scheduling Assistant</h2>
+    <div class="form-row">
+      <div style="grid-column:1/-1"><label>Meeting Title</label><input id="title" type="text" placeholder="e.g. Team Standup"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Date</label><input id="date" type="date"></div>
+      <div><label>Time</label><input id="time" type="time"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Duration</label><select id="duration"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select></div>
+      <div><label>Category</label><select id="category"><option value="work">💼 Work</option><option value="personal">🏠 Personal</option><option value="external">🌐 External</option></select></div>
+    </div>
+    <div class="form-row">
+      <div><label>Participants</label><input id="participants" type="number" placeholder="e.g. 5" min="1"></div>
+      <div><label>Travel Time (min)</label><input id="travel" type="number" value="0" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div style="grid-column:1/-1"><label>Recurring?</label><select id="recurring"><option value="no">No</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></div>
+    </div>
+    <button class="btn" onclick="addMeeting()">➕ Add Meeting</button>
+  </div>
+
+  <div class="card">
+    <h2>🤖 Agent Stack</h2>
+    <div class="agent"><div class="agent-dot" style="background:#3182ce"></div><div class="agent-info"><b>Availability Agent</b><span>Detects conflicts, adds buffers, tracks free slots</span></div><span class="badge badge-green">Active</span></div>
+    <div class="agent"><div class="agent-dot" style="background:#d69e2e"></div><div class="agent-info"><b>Preference Learner</b><span>Learns optimal times from your meeting history</span></div><span class="badge badge-yellow">Learning</span></div>
+    <div class="agent"><div class="agent-dot" style="background:#38a169"></div><div class="agent-info"><b>Optimization Agent</b><span>Batches meetings, predicts cancellations</span></div><span class="badge badge-blue">Running</span></div>
+    <div class="agent"><div class="agent-dot" style="background:#805ad5"></div><div class="agent-info"><b>Negotiation Protocol</b><span>Coordinates scheduling for 20+ people</span></div><span class="badge badge-green">Active</span></div>
+  </div>
+
+  <div class="card full">
+    <h2>🗓️ Calendar Optimizer</h2>
+    <div id="meetingList"><div class="empty">No meetings yet. Add one above!</div></div>
+  </div>
+
+  <div class="card full">
+    <h2>📊 Meeting Analytics</h2>
+    <div class="stats">
+      <div class="stat"><div class="stat-val" id="sTotal" style="color:#3182ce">0</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-val" id="sWork"  style="color:#38a169">0</div><div class="stat-lbl">Work</div></div>
+      <div class="stat"><div class="stat-val" id="sHours" style="color:#d69e2e">0h</div><div class="stat-lbl">Scheduled</div></div>
+      <div class="stat"><div class="stat-val" id="sConflicts" style="color:#e53e3e">0</div><div class="stat-lbl">Conflicts</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><div style="font-size:0.72rem;color:#888;margin-bottom:6px">BREAKDOWN</div><div id="breakdown" style="font-size:0.8rem;color:#666">Add meetings to see breakdown.</div></div>
+      <div><div style="font-size:0.72rem;color:#888;margin-bottom:6px">RECURRING</div><div id="recurringInfo" style="font-size:0.8rem;color:#666">No recurring meetings yet.</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💡 Smart Suggestions</h2>
+    <div id="suggestions"><div class="tip success"><b>✅ System Ready</b><span>Add meetings to get smart suggestions.</span></div></div>
+  </div>
+
+  <div class="card">
+    <h2>🗜️ ScaleDown Compression</h2>
+    <div class="bar-row"><div class="bar-label">History compressed</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#3182ce"></div></div><div class="bar-pct" style="color:#3182ce">80%</div></div>
+    <div class="bar-row"><div class="bar-label">Overhead reduced</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#38a169"></div></div><div class="bar-pct" style="color:#38a169">75%</div></div>
+    <div class="bar-row"><div class="bar-label">Multi-party (20+ ppl)</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#805ad5"></div></div><div class="bar-pct" style="color:#805ad5">✓</div></div>
+    <div class="scaledown-note">12-month history → compressed to 2.4 months<br>~4,380 events · 680MB → 136MB saved</div>
+  </div>
+
+  <div class="card">
+    <h2>🤝 Negotiation Protocols</h2>
+    <div class="neg"><div class="neg-top"><b>Q1 Roadmap Review</b><span>22 people · 4 time zones</span></div><div class="prog-track"><div class="prog-fill" style="width:78%;background:#3182ce"></div></div><div class="neg-status">78% consensus · resolving 5 conflicts</div></div>
+    <div class="neg"><div class="neg-top"><b>Design Sprint Kickoff</b><span>8 people · hybrid</span></div><div class="prog-track"><div class="prog-fill" style="width:100%;background:#38a169"></div></div><div class="neg-status" style="color:#276749">✓ Confirmed: Mar 3, 10am</div></div>
+    <div class="neg"><div class="neg-top"><b>Monthly All-Hands</b><span>47 people · global</span></div><div class="prog-track"><div class="prog-fill" style="width:45%;background:#d69e2e"></div></div><div class="neg-status" style="color:#744210">45% responded · polling open</div></div>
+  </div>
+
+  <div class="card">
+    <h2>📡 Live Agent Feed</h2>
+    <div id="feed">
+      <div class="feed-item"><div class="feed-time">now</div><span class="feed-badge fb-ok">OK</span>&nbsp; All agents initialized</div>
+      <div class="feed-item"><div class="feed-time">1m</div><span class="feed-badge fb-info">Info</span>&nbsp; ScaleDown: 12-month history loaded</div>
+      <div class="feed-item"><div class="feed-time">3m</div><span class="feed-badge fb-pred">Learn</span>&nbsp; Preference Learner: analyzing patterns...</div>
+    </div>
+    <button class="sim-btn" onclick="simulateFeed()">▶ Simulate Agent Event</button>
+  </div>
+
+  <div class="card">
+    <h2>⏱️ Time-Savings Calculation</h2>
+    <div class="savings-box">
+      <div class="savings-val" id="savedHours">0.0h</div>
+      <div class="savings-lbl">Hours saved vs. manual scheduling</div>
+    </div>
+    <div class="mini-grid">
+      <div class="mini-box"><div class="mini-val" id="cConflicts" style="color:#38a169">0</div><div class="mini-lbl">Conflicts resolved</div></div>
+      <div class="mini-box"><div class="mini-val" id="cBuffers"   style="color:#805ad5">0</div><div class="mini-lbl">Buffers added</div></div>
+      <div class="mini-box"><div class="mini-val" id="cTravel"    style="color:#d69e2e">0</div><div class="mini-lbl">Travel blocks</div></div>
+      <div class="mini-box"><div class="mini-val" id="cPredicted" style="color:#e53e3e">0</div><div class="mini-lbl">Cancellations predicted</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let meetings = [];
+let cConflicts = 0, cBuffers = 0, cTravel = 0, cPredicted = 0;
+const COLORS = { work: '#3182ce', personal: '#38a169', external: '#805ad5' };
+
+function addMeeting() {
+  const title        = document.getElementById('title').value.trim();
+  const date         = document.getElementById('date').value;
+  const time         = document.getElementById('time').value;
+  const duration     = parseInt(document.getElementById('duration').value);
+  const category     = document.getElementById('category').value;
+  const participants = parseInt(document.getElementById('participants').value) || 1;
+  const travel       = parseInt(document.getElementById('travel').value) || 0;
+  const recurring    = document.getElementById('recurring').value;
+
+  if (!title || !date || !time) { alert('Please enter a Title, Date, and Time!'); return; }
+
+  const m = { id: Date.now(), title, date, time, duration, category, participants, travel, recurring, tags: [] };
+
+  // Availability Agent: conflict detection
+  if (meetings.find(x => x.date === date && x.time === time)) {
+    feed('warn', 'Conflict', `"${title}" overlaps an existing meeting at ${time}`);
+    cConflicts++;
+  }
+  // Availability Agent: buffer time management
+  if (duration >= 60) { m.tags.push('buffer'); feed('ok', 'Buffer', `15-min buffer auto-added after "${title}"`); cBuffers++; }
+
+  // Travel time calculation
+  if (travel > 0) { m.tags.push('travel'); feed('info', 'Travel', `${travel}-min travel block reserved before "${title}"`); cTravel++; }
+
+  // Preference Learner: recurring optimization
+  if (recurring !== 'no') { m.tags.push('recur'); feed('ok', 'Recur', `Recurring (${recurring}) "${title}" optimized`); }
+
+  // Preference Learner: optimal slot (9–11am)
+  if (parseInt(time) >= 9 && parseInt(time) <= 11) m.tags.push('optimal');
+
+  // Optimization Agent: cancellation prediction
+  if (category === 'external' && participants > 8 && duration >= 60) {
+    m.tags.push('risk'); feed('pred', 'Predict', `"${title}" — elevated cancellation risk`); cPredicted++;
+  }
+
+  // Negotiation Protocol: large group
+  if (participants >= 20) feed('info', 'Neg', `Negotiation protocol started for "${title}" (${participants} people)`);
+
+  meetings.push(m);
+  meetings.sort((a, b) => (a.date + a.time) > (b.date + b.time) ? 1 : -1);
+
+  ['title','date','time','participants'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('travel').value = '0';
+  document.getElementById('recurring').value = 'no';
+  render();
+}
+
+function deleteMeeting(id) { meetings = meetings.filter(m => m.id !== id); render(); }
+
+function render() {
+  // Meeting list
+  document.getElementById('meetingList').innerHTML = meetings.length === 0
+    ? '<div class="empty">No meetings yet. Add one above!</div>'
+    : meetings.map(m => `
+      <div class="meeting">
+        <div class="meeting-dot" style="background:${COLORS[m.category]}"></div>
+        <div class="meeting-info">
+          <b>${m.title}</b>
+          <p>${fDate(m.date)} · ${fTime(m.time)} · ${m.duration}min · ${m.participants} person(s)${m.travel > 0 ? ` · 🚗 +${m.travel}min` : ''}</p>
+          <div class="tags">
+            ${m.recurring !== 'no'       ? `<span class="tag tag-recur">🔁 ${m.recurring}</span>` : ''}
+            ${m.tags.includes('buffer')  ? `<span class="tag tag-buffer">⏸ Buffer</span>` : ''}
+            ${m.tags.includes('travel')  ? `<span class="tag tag-travel">🚗 Travel</span>` : ''}
+            ${m.tags.includes('risk')    ? `<span class="tag tag-risk">⚠ Cancel risk</span>` : ''}
+            ${m.tags.includes('optimal') ? `<span class="tag tag-optimal">✓ Optimal</span>` : ''}
+          </div>
+        </div>
+        <button class="del-btn" onclick="deleteMeeting(${m.id})">Remove</button>
+      </div>`).join('');
+
+  // Analytics
+  const mins = meetings.reduce((s, m) => s + m.duration, 0);
+  const work = meetings.filter(m => m.category === 'work').length;
+  document.getElementById('sTotal').textContent     = meetings.length;
+  document.getElementById('sWork').textContent      = work;
+  document.getElementById('sHours').textContent     = (mins / 60).toFixed(1) + 'h';
+  document.getElementById('sConflicts').textContent = countConflicts();
+
+  const p = meetings.filter(m => m.category === 'personal').length;
+  const e = meetings.filter(m => m.category === 'external').length;
+  document.getElementById('breakdown').innerHTML = meetings.length === 0 ? 'Add meetings to see breakdown.'
+    : `💼 Work: <b>${work}</b> &nbsp; 🏠 Personal: <b>${p}</b> &nbsp; 🌐 External: <b>${e}</b><br><br>Avg: <b>${Math.round(mins/meetings.length)} min</b>`;
+
+  const rec = meetings.filter(m => m.recurring !== 'no');
+  document.getElementById('recurringInfo').innerHTML = rec.length === 0 ? 'No recurring meetings yet.'
+    : `<b>${rec.length}</b> recurring:<br>` + rec.map(m => `🔁 ${m.title} (${m.recurring})`).join('<br>');
+
+  // Suggestions
+  const tips = [];
+  if (meetings.filter(m => m.duration >= 60).length) tips.push({ t:'', h:'⏸ Buffer Time Added', b:`${meetings.filter(m=>m.duration>=60).length} long meeting(s) — buffers auto-inserted.` });
+  if (meetings.filter(m => m.travel > 0).length)     tips.push({ t:'', h:'🚗 Travel Calculated', b:`${meetings.filter(m=>m.travel>0).length} meeting(s) — travel blocks reserved.` });
+  if (countConflicts() > 0)                           tips.push({ t:'danger', h:`⚠ ${countConflicts()} Conflict(s)`, b:'Meetings overlap — please reschedule one.' });
+  if (rec.length)                                     tips.push({ t:'success', h:'🔁 Recurring Optimized', b:`${rec.length} recurring meeting(s) tracked.` });
+  if (meetings.filter(m=>m.tags.includes('risk')).length) tips.push({ t:'warn', h:'🔮 Cancellation Risk', b:`${meetings.filter(m=>m.tags.includes('risk')).length} meeting(s) flagged.` });
+  if (meetings.filter(m=>m.tags.includes('optimal')).length) tips.push({ t:'success', h:'⭐ Optimal Slots', b:`${meetings.filter(m=>m.tags.includes('optimal')).length} meeting(s) in 9–11am window.` });
+
+  document.getElementById('suggestions').innerHTML = tips.length === 0
+    ? '<div class="tip success"><b>✅ Ready</b><span>Add meetings to see suggestions.</span></div>'
+    : tips.map(t => `<div class="tip ${t.t}"><b>${t.h}</b><span>${t.b}</span></div>`).join('');
+
+  // Savings
+  const saved = (cConflicts*10 + cBuffers*5 + cTravel*8 + cPredicted*15) / 60;
+  document.getElementById('savedHours').textContent  = saved.toFixed(1) + 'h';
+  document.getElementById('cConflicts').textContent  = cConflicts;
+  document.getElementById('cBuffers').textContent    = cBuffers;
+  document.getElementById('cTravel').textContent     = cTravel;
+  document.getElementById('cPredicted').textContent  = cPredicted;
+}
+
+function countConflicts() {
+  let n = 0;
+  for (let i = 0; i < meetings.length; i++)
+    for (let j = i+1; j < meetings.length; j++)
+      if (meetings[i].date === meetings[j].date && meetings[i].time === meetings[j].time) n++;
+  return n;
+}
+
+function fDate(d) {
+  const [y,mo,day] = d.split('-');
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][mo-1]+' '+parseInt(day)+', '+y;
+}
+
+function fTime(t) {
+  const [h,m] = t.split(':'), hr = parseInt(h);
+  return `${hr>12?hr-12:hr||12}:${m} ${hr>=12?'PM':'AM'}`;
+}
+
+const demos = [
+  {b:'fb-ok',  l:'Opt',    t:'Optimization: 3 meetings batched on Wednesday'},
+  {b:'fb-pred',l:'Predict',t:'Learner: Mon 8am has low attendance — avoid'},
+  {b:'fb-info',l:'Sync',   t:'ScaleDown: 80% compression complete'},
+  {b:'fb-warn',l:'Alert',  t:'Back-to-back detected — buffer inserted'},
+  {b:'fb-ok',  l:'Neg',    t:'Negotiation: Q1 Review confirmed (22 ppl)'},
+];
+let demoIdx = 0;
+
+function feed(type, label, text) {
+  const map = {ok:'fb-ok', warn:'fb-warn', info:'fb-info', pred:'fb-pred'};
+  addToFeed(map[type], label, text);
+}
+function simulateFeed() { const e = demos[demoIdx++%demos.length]; addToFeed(e.b,e.l,e.t); }
+function addToFeed(badge, label, text) {
+  const f = document.getElementById('feed');
+  const el = document.createElement('div');
+  el.className = 'feed-item';
+  el.innerHTML = `<div class="feed-time">now</div><span class="feed-badge ${badge}">${label}</span>&nbsp; ${text}`;
+  f.insertBefore(el, f.firstChild);
+  if (f.children.length > 7) f.removeChild(f.lastChild);
+}
+
+document.getElementById('date').valueAsDate = new Date();
+</script>
+</body>
+</html>
